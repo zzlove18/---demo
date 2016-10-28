@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图片轮播</title>
+    <style>
+        html,body,div,ul,ol,li{ margin: 0; padding: 0; background-color: #323232;        }
+        .js-silder{
+            width: 310px;
+            margin: 100px auto;
+            position: relative;
+        }
+        .silder-scroll{
+            width: 310px;
+            height: 220px;
+            overflow: hidden;
+        }
+        .silder-main{
+            width: 620px;
+            height: 220px;
+            background-color: black;
+            position: relative;
+        }
+        .silder-main-img{
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .js-silder-ctrl{
+            margin-top: 10px;
+            text-align: center;
+        }
+        .silder-ctrl-left,
+        .silder-ctrl-right{
+            position: absolute;
+            top: 50%;
+            margin-top: -45px;
+            width: 30px;
+            height: 45px;
+            cursor: pointer;
+            background: url(images/icon_v9.png) no-repeat 5px 5px;
+        }
+        .silder-ctrl-left{
+            left: 0;
+        }
+        .silder-ctrl-right{
+            right: 0;
+            background-position: -5px -40px;
+        }
+        .silder-ctrl-con{
+            display: inline-block;
+            width: 24px;
+            height: 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            text-indent: -100px;
+            overflow: hidden;
+            background: url(images/icon_v9.png) no-repeat -24px -782px ;
+        }
+        .current{
+            background: url(images/icon_v9.png) no-repeat -24px -763px ;
+        }
+    </style>
+    <script>
+
+        window.onload = function (){
+        	// 获取到所有元素
+            var js_silder = $("div.js-silder"),
+                silder_main = $("div.silder-main"),
+                silder_main_imgs = silder_main.children,
+                imgs_len = silder_main_imgs.length,
+                imgs_width = silder_main_imgs[0].offsetWidth,
+                js_silder_ctrl = js_silder.children[1];
+            //下方的点击按钮
+            for(var i = 0;i < imgs_len;i ++){
+                silder_main_imgs[i].index = i;
+
+                //将除首页的所有的图片放到图片右侧
+                if(i != 0){
+                    silder_main_imgs[i].style.left = imgs_width + "px";
+                }
+
+                var span = document.createElement("span");
+                span.className = "silder-ctrl-con";
+                if(i == 0){
+                    span.className = "silder-ctrl-con current";
+                }
+                span.innerHTML = i+1;
+
+                //将动态创建出来的span(下方的点击按钮)方到最后一个元素前面
+                js_silder_ctrl.insertBefore(span, js_silder_ctrl.children[js_silder_ctrl.children.length - 1]);
+            }
+
+            //获取所有的按钮，左右按钮和动态创建的下方按钮
+            var silder_ctrl_spans = js_silder_ctrl.children,
+                iNow = 0;//控制图片播放开关
+            for (var j = 0,len = silder_ctrl_spans.length; j < len; j++) {
+                
+                silder_ctrl_spans[j].onclick = function (){
+                    var classname = this.className,
+                        thatNum = this.innerHTML - 1;
+                    if(classname == "silder-ctrl-left"){//左边按钮，即图片左移按钮
+                         //当前播放的图片往右边出去
+                        animate(silder_main_imgs[iNow], {"left": imgs_width});
+
+                        iNow--;
+                        if(iNow < 0){
+                            iNow = imgs_len - 1;
+                        }
+                        /*上一张图片进来之前先将它移到最左边，这样就能保证无限循环，如果不这样设置，
+                        那么第一次到头后就不会有从左边出来的效果了。*/
+                        silder_main_imgs[iNow].style.left = -imgs_width + "px";
+                        //上一张图片进来
+                        animate(silder_main_imgs[iNow], {"left": 0});
+                    }else if(classname == "silder-ctrl-right"){//右边按钮，即下一张按钮
+                        play();
+                    }else{
+                        /*如果点击的这个数字按钮的数值大于当前图片的索引，那么图片应该从右边出来*/
+                        if(thatNum > iNow){
+                            animate(silder_main_imgs[iNow], {"left": -imgs_width});
+                            silder_main_imgs[thatNum].style.left = imgs_width + "px";
+                            animate(silder_main_imgs[thatNum], {"left": 0});
+                        }else if(thatNum < iNow){
+                            animate(silder_main_imgs[iNow], {"left": imgs_width});
+                            silder_main_imgs[thatNum].style.left = -imgs_width + "px";
+                            animate(silder_main_imgs[thatNum], {"left": 0});
+                        }
+                        /*必须要把iNow 设置为 thatNum，为了轮播是从当前的这张图片开始的*/
+                        iNow = thatNum;
+                    }
+
+                    setCtrlBtnStyle(iNow+1);
+                }
+                
+            }
+
+            //设置动态创建的下方点击按钮的样式
+            function setCtrlBtnStyle(num){
+                for(var k = 1,len = silder_ctrl_spans.length;k <= len - 2;k ++){
+                    silder_ctrl_spans[k].className = "silder-ctrl-con";
+                }
+
+                 silder_ctrl_spans[num].className = "silder-ctrl-con current";
+            }
+
+            //自动播放
+            var timer = null;
+            timer = setInterval(function (){
+                play();
+                setCtrlBtnStyle(iNow+1);
+            }, 2000);
+
+            //当鼠标放在图片上的时候停止自动播放
+            js_silder.onmouseover = function (){
+                clearInterval(timer);
+            }
+            //当鼠标离开图片的时候自动播放
+            js_silder.onmouseleave = function (){
+                clearInterval(timer);
+                 timer = setInterval(function (){
+                    play();
+                    setCtrlBtnStyle(iNow+1);
+                }, 2000);
+            }
+
+            function play(){
+                //当前这张图片往左边出去
+                animate(silder_main_imgs[iNow], {"left": -imgs_width});
+
+                iNow++;
+                if(iNow > imgs_len - 1){
+                    iNow = 0;
+                }
+                /*下一张图片进来之前先将它移到最右边，这样就能保证无限循环，如果不这样设置，
+                那么第一次到尾后就不会有从右边出来的效果了。*/
+                silder_main_imgs[iNow].style.left = imgs_width + "px";
+                //下一张图片进来
+                animate(silder_main_imgs[iNow], {"left": 0});
+            }
+        }
+
+
+        // 图片动画函数
+        function animate(ele,attrsJson,fn){
+            clearInterval(ele.timer);
+
+            ele.timer = setInterval(function (){
+                var flag = true;
+                for(var attr in attrsJson){
+                    var curStyle = parseInt(getStyle(ele,attr)),
+                        step = (parseInt(attrsJson[attr]) - curStyle) / 10;
+
+                    step = step > 0 ? Math.ceil(step) : Math.floor(step);
+
+                    if(curStyle != attrsJson[attr]){
+                        flag = false;
+                    }
+
+                    if(attr == "zIndex"){
+                        ele.style.zIndex = attrsJson[attr];
+                    }else{
+                        ele.style[attr] = curStyle + step + "px";
+                    }
+                    
+                }
+                if(flag){
+                    clearInterval(ele.timer);
+                    if(fn){
+                        fn.call(window);
+                    }
+                }
+            }, 20);
+        }
+        // 获取所有元素的函数
+        function $(selector){
+            var classSelectSign = selector.indexOf("."),
+                idSelectSign = selector.indexOf("#");
+
+            //获取id元素
+            if(idSelectSign > -1){
+                return document.getElementById(selector.substr(1));
+            }
+
+            //获取class元素
+            if(classSelectSign > -1){
+                var classSelect = selector.substr(classSelectSign+1);
+
+                //支持通过class获取元素的浏览器
+                if(document.getElementsByClassName){
+                    var eles = document.getElementsByClassName(classSelect);
+                    if(eles.length == 1){
+                        return eles[0];
+                    }else{
+                        return eles;
+                    }
+                }else{
+                    var baseEleName = classSelectSign > 0 ? selector.substr(0,classSelectSign) : "*",
+                        eles = document.getElementsByTagName(baseEleName),
+                        elesResult = [];
+
+                    for(var i = 0,len = eles.length; i < len; i ++){
+                        if(hasClass(eles[i],classSelect)){
+                            elesResult.push(eles[i]);
+                        }
+                    }
+                    if(elesResult.length == 1){
+                        return elesResult[0];
+                    }else{
+                        return elesResult;
+                    }
+                }
+            }
+
+            //获取标签
+            return document.getElementsByTagName(selector);           
+        }
+
+        // 判断某个元素是否有class
+        function hasClass(ele,classnameparam){
+            var classname = ele.className
+                classArr = classname.split(" ");
+            for(var i in classArr){
+                if(classArr[i] == classnameparam){
+                    return true;
+                }
+            }
+            return false;
+        }
+
+       	// 获取样式
+        function getStyle(ele,attr){
+            if(ele.currentStyle){
+                return ele.currentStyle[attr];
+            }else{
+                return ele.ownerDocument.defaultView.getComputedStyle(ele,null)[attr];
+            }
+        }
+    </script>
+</head>
+<body>
+	<!-- 最外层盒子 -->
+    <div class="js-silder">
+    	<!-- 轮播图片的盒子 -->
+        <div class="silder-scroll">
+            <div class="silder-main">
+                <div class="silder-main-img">
+                    <img src="images/1.png" alt="">
+                </div>
+                <div class="silder-main-img">
+                    <img src="images/2.png" alt="">
+                </div>
+                <div class="silder-main-img">
+                    <img src="images/3.png" alt="">
+                </div>
+                <div class="silder-main-img">
+                    <img src="images/4.png" alt="">
+                </div>
+                <div class="silder-main-img">
+                    <img src="images/5.png" alt="">
+                </div>
+            </div>
+        </div>
+        <!-- 所有按钮的盒子,包括js动态创建的按钮 -->
+        <div class="js-silder-ctrl">
+            <span class="silder-ctrl-left"></span>
+            <span class="silder-ctrl-right"></span>
+        </div>
+    </div>
+</body>
+</html>
